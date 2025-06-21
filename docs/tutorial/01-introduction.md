@@ -1,8 +1,46 @@
----
+---<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat entre 2 personnes</title>
+</head>
+<body>
+  <div id="chat">
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Tape ton message…">
+    <button onclick="sendMessage()">Envoyer</button>
+  </div>
+  <script src="chat.js"></script>
+</body>
+</html>
 title: Tutorial - Introduction
 sidebar_label: Introduction
 slug: introduction
----
+---const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server);
+
+app.use(express.static(__dirname + '/public'));
+
+io.on('connection', (socket) => {
+  console.log('Un utilisateur est connecté');
+
+  socket.on('chat message', (msg) => {
+    socket.broadcast.emit('chat message', msg); // envoie à l’autre utilisateur
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Utilisateur déconnecté');
+  });
+});
+
+server.listen(3000, () => {
+  console.log('Serveur démarré sur http://localhost:3000');
+});
 
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
@@ -80,3 +118,51 @@ import { Server } from "socket.io";
 
 
 Ready? Click "Next" to get started.
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat entre 2 personnes</title>
+  <style>
+    #messages { border: 1px solid #ccc; height: 200px; overflow-y: auto; margin-bottom: 10px; padding: 5px;}
+  </style>
+</head>
+<body>
+  <div id="messages"></div>
+  <input id="input" autocomplete="off" /><button onclick="send()">Envoyer</button>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const messages = document.getElementById('messages');
+    const input = document.getElementById('input');
+
+    function send() {
+      if (input.value) {
+        messages.innerHTML += `<div><b>Moi:</b> ${input.value}</div>`;
+        socket.emit('chat message', input.value);
+        input.value = '';
+      }
+    }
+
+    socket.on('chat message', function(msg){
+      messages.innerHTML += `<div><b>Lui/Elle:</b> ${msg}</div>`;
+      // Notification simple
+      if (document.hidden) {
+        if (Notification.permission === "granted") {
+          new Notification("Nouveau message reçu !");
+        }
+      }
+    });
+
+    // Gestion des notifications
+    if (window.Notification && Notification.permission !== "granted") {
+      Notification.requestPermission();
+    }
+
+    input.addEventListener("keyup", function(event) {
+      if (event.key === "Enter") send();
+    });
+  </script>
+</body>
+</html>
+const { Server } = require("socket.io");
